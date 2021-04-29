@@ -25,7 +25,7 @@ export class Provider {
     this.options = options
     this.host = host
     this.connected = true
-    this.vmContext = new VMContext()
+    this.vmContext = new VMContext('berlin')
 
     this.Accounts = new Accounts(this.vmContext)
     this.Transactions = new Transactions(this.vmContext)
