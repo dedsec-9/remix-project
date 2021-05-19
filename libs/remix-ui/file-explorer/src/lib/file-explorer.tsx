@@ -23,7 +23,6 @@ export const FileExplorer = (props: FileExplorerProps) => {
       key: '',
       type: 'folder'
     }],
-    focusPath: null,
     files: [],
     fileManager: null,
     ctrlKey: false,
@@ -57,6 +56,13 @@ export const FileExplorer = (props: FileExplorerProps) => {
       extension: [],
       pattern: []
     }, {
+      id: 'run',
+      name: 'Run',
+      type: [],
+      path: [],
+      extension: ['.js'],
+      pattern: []
+    }, {
       id: 'pushChangesToGist',
       name: 'Push changes to gist',
       type: [],
@@ -64,11 +70,11 @@ export const FileExplorer = (props: FileExplorerProps) => {
       extension: [],
       pattern: ['^browser/gists/([0-9]|[a-z])*$']
     }, {
-      id: 'run',
-      name: 'Run',
-      type: [],
+      id: 'copy',
+      name: 'Copy',
+      type: ['folder', 'file'],
       path: [],
-      extension: ['.js'],
+      extension: [],
       pattern: []
     }],
     focusContext: {
@@ -98,8 +104,10 @@ export const FileExplorer = (props: FileExplorerProps) => {
     toasterMsg: '',
     mouseOverElement: null,
     showContextMenu: false,
-    reservedKeywords: [name, 'gist-']
+    reservedKeywords: [name, 'gist-'],
+    copyElement: []
   })
+  const [canPaste, setcanPaste] = useState(false)
   const [fileSystem, dispatch] = useReducer(fileSystemReducer, fileSystemInitialState)
   const editRef = useRef(null)
 
@@ -162,12 +170,7 @@ export const FileExplorer = (props: FileExplorerProps) => {
 
   useEffect(() => {
     if (contextMenuItems) {
-      setState(prevState => {
-        // filter duplicate items
-        const items = contextMenuItems.filter(({ name }) => prevState.actions.findIndex(action => action.name === name) === -1)
-
-        return { ...prevState, actions: [...prevState.actions, ...items] }
-      })
+      addMenuItems(contextMenuItems)
     }
   }, [contextMenuItems])
 
@@ -208,6 +211,38 @@ export const FileExplorer = (props: FileExplorerProps) => {
       })
     }
   }, [state.modals])
+
+  useEffect(() => {
+    if (canPaste) {
+      addMenuItems([{
+        id: 'paste',
+        name: 'Paste',
+        type: ['folder', 'file'],
+        path: [],
+        extension: [],
+        pattern: []
+      }])
+    } else {
+      removeMenuItems(['paste'])
+    }
+  }, [canPaste])
+
+  const addMenuItems = (items: { id: string, name: string, type: string[], path: string[], extension: string[], pattern: string[] }[]) => {
+    setState(prevState => {
+      // filter duplicate items
+      const actions = items.filter(({ name }) => prevState.actions.findIndex(action => action.name === name) === -1)
+
+      return { ...prevState, actions: [...prevState.actions, ...actions] }
+    })
+  }
+
+  const removeMenuItems = (ids: string[]) => {
+    setState(prevState => {
+      const actions = prevState.actions.filter(({ id }) => ids.findIndex(value => value === id) === -1)
+
+      return { ...prevState, actions }
+    })
+  }
 
   const extractNameFromKey = (key: string):string => {
     const keyPath = key.split('/')
@@ -659,6 +694,21 @@ export const FileExplorer = (props: FileExplorerProps) => {
     })
   }
 
+  const handleCopyClick = (path: string, type: string) => {
+    setState(prevState => {
+      return { ...prevState, copyElement: [...prevState.copyElement, { key: path, type }] }
+    })
+    setcanPaste(true)
+  }
+
+  const handlePasteClick = (dest: string) => {
+    console.log('destination: ', dest)
+    setState(prevState => {
+      return { ...prevState, copyElement: [] }
+    })
+    setcanPaste(false)
+  }
+
   const label = (file: File) => {
     return (
       <div
@@ -832,6 +882,8 @@ export const FileExplorer = (props: FileExplorerProps) => {
           deletePath={deletePath}
           renamePath={editModeOn}
           runScript={runScript}
+          copy={handleCopyClick}
+          paste={handlePasteClick}
           emit={emitContextMenuEvent}
           pageX={state.focusContext.x}
           pageY={state.focusContext.y}
