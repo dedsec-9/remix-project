@@ -59,7 +59,7 @@ export const FileExplorerContextMenu = (props: FileExplorerContextMenuProps) => 
               copy(path, type)
               break
             case 'Paste':
-              paste(path)
+              paste(path, type)
               break
             default:
               emit && emit(item.id, path)
